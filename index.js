@@ -93,7 +93,8 @@ BMWConnected.prototype.getExecution = function(callback) {
   var complete = 0;
 
   requestretry.get({
-    url: 'https://www.bmw-connecteddrive.co.uk/api/vehicle/remoteservices/v1/' + this.vin + '/state/execution',
+    // url: 'https://www.bmw-connecteddrive.co.uk/api/vehicle/remoteservices/v1/' + this.vin + '/state/execution',
+    url: 'https://www.bmw-connecteddrive.co.uk/remoteservices/rsapi/v1/' + this.vin + '/state/execution',
     headers: {
       'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_1_1 like Mac OS X) AppleWebKit/604.3.5 (KHTML, like Gecko) Version/11.0 Mobile/15B150 Safari/604.1',
       'Authorization': 'Bearer ' + this.authToken,
@@ -123,9 +124,9 @@ function myRetryStrategy(err, response, body){
   // retry the request if we had an error or if the response was a 'Bad Gateway'
   var json = JSON.parse(body);
   var commandtype = (json["remoteServiceType"]);
-  var execution = (json["remoteServiceStatus"]);
+  var execution = (json["event"]["rsEventStatus"]);
 
-  return err || execution === "PENDING" || execution ==="DELIVERED_TO_VEHICLE"
+  return err || execution === "PENDING" || execution === "RUNNING"
 }
 
 
@@ -138,12 +139,22 @@ BMWConnected.prototype.setState = function(state, callback) {
       callback(err);
     }
 
+    console.log('authtoken', this.authToken)
+
+    var setStateUrl = 'https://www.bmw-connecteddrive.co.uk/remoteservices/rsapi/v1/' + this.vin + '/' + bmwState
+    console.log('setStateUrl', setStateUrl)
+
   request.post({
-    url: 'https://customer.bmwgroup.com/api/vehicle/remoteservices/v1/' + this.vin +'/' + bmwState,
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_1_1 like Mac OS X) AppleWebKit/604.3.5 (KHTML, like Gecko) Version/11.0 Mobile/15B150 Safari/604.1',
-      'Authorization': 'Bearer ' + this.authToken,
-  }
+      // url: 'https://customer.bmwgroup.com/api/vehicle/remoteservices/v1/' + this.vin +'/' + bmwState,
+      url: setStateUrl,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_1_1 like Mac OS X) AppleWebKit/604.3.5 (KHTML, like Gecko) Version/11.0 Mobile/15B150 Safari/604.1',
+        'Authorization': 'Bearer ' + this.authToken,
+        // 'Content-Type': 'application/json'
+    },
+    json: {
+      clientId: 3
+    }
   }, function(err, response, body) {
 
     if (!err && response.statusCode == 200) {
